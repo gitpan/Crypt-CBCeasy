@@ -24,7 +24,14 @@ sub http_get {
 
     my $key     = "my personal key";
     IDEA::encipher($key, *S, "outfile");
-    IDEA::decipher($key, "outfile", "outfile.html");
+    $file = IDEA::decipher($key, "outfile");
+
+    $file =~ s/.*?(<HTML)/$1/si;
+    $file =~ s/\r+\n/\n/g;
+
+    open(OUT, ">outfile.html");
+    print OUT $file;
+    close OUT;
 
     chat::close($handle);
 #    $rezult;

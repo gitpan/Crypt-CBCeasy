@@ -1,17 +1,19 @@
-# easy en/decrypting with DES/IDEA/Blowfish
-# Mike Blazer <blazer@mail.nevalink.ru>  Mar 5, 2000
+# easy en/decryption with DES/IDEA/Blowfish
+# Mike Blazer <blazer@mail.nevalink.ru>
 
 package Crypt::CBCeasy;
 
 use 5.003;
-use strict;
-no strict 'refs';
-use vars qw($VERSION);
-
 use Crypt::CBC;
 use Carp;
+use Symbol;
 
-$VERSION = '0.21';
+use strict;
+no strict 'refs';
+use vars qw($VERSION @DEFAULT_CIPHERS $LastCipher);
+
+$VERSION = '0.22';
+@DEFAULT_CIPHERS = qw/DES IDEA Blowfish/;
 
 
 #--------------
@@ -19,23 +21,32 @@ sub useCBC {
 #--------------
 # $from - handler (r), filename or just plain or encrypted text
 # $to   - handler (r), or filename. If '' or undef sub returns $to-string
-  my ($key, $algorithm, $from, $to, $op) = @_;
-  my ($fhi, $fho, $fromFile, $buffer, $fromStr, $toStr, $cipher);
-  local ($_, *I, *O);
+  my ($key, $from, $to) = @_;
+  my $sub               = (caller(1))[3]; # caller subroutine
+  my ($algorithm, $op)  = $sub =~ /^(.*)::(.*)$/;
+#print "$algorithm, $op\n";
+  $LastCipher = $algorithm;
+
+  my ($fhi, $fho, $fromFile, $INopened, $OUTopened,
+      $buffer, $fromStr, $toStr, $cipher);
 
   croak "CBCeasy: source not defined\n"      unless defined $from;
   croak "CBCeasy: key not defined\n"         unless defined $key;
-  croak "CBCeasy: you must provide \$op eq `en' or `de'\n" unless $op && $op =~ /^(en|de)$/i;
+  croak "CBCeasy: I can do only `encipher' or `decipher'\n"
+     unless $op && $op =~ /^(encipher|decipher)$/i;
 
   if ((UNIVERSAL::isa($from, 'GLOB') ||     # \*HANDLE
        UNIVERSAL::isa(\$from,'GLOB')        # *HANDLE
        ) &&  defined fileno $from
      ) {
 
-     $fhi = $from; $fromFile = 1;
+     $fhi = $from;
+     $fromFile = 1;
 
   } elsif (-e $from && -r _) {      # filename
-     $fhi = *I; $fromFile = 1;
+     $fhi = gensym;
+     $fromFile = 1;
+     $INopened = 1;
      open ($fhi, $from) || croak "CBCeasy: file `$from' not found/readable\n";
 
   } elsif (-e $from && !-r _) {     # filename
@@ -56,7 +67,7 @@ sub useCBC {
      }
      $toStr .= $cipher->finish;
 
-     close $fhi if $fhi eq *I;
+     close $fhi if $INopened;
 
   } else {
      # fails with too long chains
@@ -78,7 +89,8 @@ sub useCBC {
      $fho = $to;
 
   } else {      # filename
-     $fho = *O;
+     $fho = gensym;
+     $OUTopened = 1;
      open ($fho, ">$to") || croak "CBCeasy: can't write file `$to'\n";
 
   }
@@ -86,22 +98,23 @@ sub useCBC {
   binmode $fho;
   print $fho $toStr;
 
-  close $fho if $fho eq *O;
+  close $fho if $OUTopened;
 
 }
 
-package DES;
+#--------------
+sub import {
+  my $pkg = shift;
 
-sub encipher ($$;$) {
-  Crypt::CBCeasy::useCBC($_[0], __PACKAGE__, $_[1], ($_[2]||undef) , 'en');
+  for (@_ ? @_ : @DEFAULT_CIPHERS) {
+     eval <<"E_O_P" unless defined *{"$_\::encipher"}{CODE};
+
+	 sub $_\::encipher { useCBC(\@_) }
+	 sub $_\::decipher { useCBC(\@_) }
+E_O_P
+
+  }
 }
-
-sub decipher ($$;$) {
-  Crypt::CBCeasy::useCBC($_[0], __PACKAGE__, $_[1], ($_[2]||undef) , 'de');
-}
-
-*IDEA::encipher = *Blowfish::encipher = \&DES::encipher;
-*IDEA::decipher = *Blowfish::decipher = \&DES::decipher;
 
 1;
 __END__
@@ -112,7 +125,7 @@ Crypt::CBCeasy - Easy things make really easy with Crypt::CBC
 
 =head1 SYNOPSIS
 
- use Crypt::CBCeasy;
+ use Crypt::CBCeasy; # !!! YOU can not 'require' this module !!!
 
  IDEA::encipher($my_key, "plain-file", "crypted-file");
 
@@ -125,27 +138,56 @@ Crypt::CBCeasy - Easy things make really easy with Crypt::CBC
 This module is just a helper for Crypt::CBC to make simple and
 usual jobs just one-liners.
 
-The current version of the module is available at:
-
-  http://base.dux.ru/guest/fno/perl/
+The current version of the module is available at CPAN.
 
 =head1 DESCRIPTION
 
-This module creates C<encipher()> and C<decipher()> functions
-in B<DES::>, B<IDEA::> and
-B<Blowfish::> namespaces (the last one works only if your Crypt::CBC
-is 1.22 or later). So, the total is 6 functions neither of which is
-imported.
+After you call this module as
 
-All functions take 3 parameters:
+  use Crypt::CBCeasy IMPORT-LIST;
+
+it creates the C<encipher()> and C<decipher()> functions in all
+namespaces (packages) listed in the C<IMPORT-LIST>.
+
+Without the C<IMPORT-LIST> it creates these 2 functions
+in the B<DES::>, B<IDEA::> and
+B<Blowfish::> namespaces by default
+to stay compatible with the previous versions
+that were capable to handle only these 3 ciphers.
+
+You have to install C<Crypt::CBC> v. 1.22 or later to work with C<Blowfish>.
+
+Sure IDEA:: functions will work only if you have Crypt::IDEA installed,
+DES:: - if you have Crypt::DES, Blowfish:: - if you have Crypt::Blowfish
+and Crypt::CBC is version 1.22 or above etc.
+
+Here's the list of the ciphers that could be called via the
+C<Crypt::CBCeasy> interface today (in fact the same modules
+that are C<Crypt::CBC> compatible):
+
+  Cipher          CPAN module
+
+  DES             Crypt::DES
+  IDEA            Crypt::IDEA
+  Blowfish        Crypt::Blowfish
+  Twofish2        Crypt::Twofish2
+  DES_PP          Crypt::DES_PP
+  Blowfish_PP     Crypt::Blowfish_PP
+
+Note that cipher names are case sensitive in the C<IMPORT-LIST>,
+so "blowfish" will give an error.
+Type them exactly as they are written in the correspondent
+underlying modules.
+
+Both C<encipher()> and C<decipher()> functions take 3 parameters:
 
   1 - en/decryption key
   2 - source
   3 - destination
 
-Sources could be: existing file path, scalar (just a string that would be
-encrypted), opened filehandle, any object that inherits from filehandle,
-for example IO::File or FileHandle object, and socket.
+The sources could be: an existing file, a scalar (just a string that would be
+encrypted), an opened filehandle, any other object that inherits from the
+filehandle, for example IO::File or FileHandle object, and socket.
 
 Destinations could be any of the above except scalar, because we can not
 distinguish between scalar and output file name here.
@@ -198,16 +240,12 @@ $crypted_text = B<IDEA::encipher(> $my_key, \*IN B<);>
 
 $crypted_text = B<IDEA::encipher(> $my_key, $fh B<);>
 
-All the same is implemented for C<decipher()> and for B<DES> and
-B<Blowfish>.
+All the same is possible for any of the ciphers in the C<IMPORT-LIST>.
 
 All functions croak on errors (such as "input file not found"), so
 if you want to trap errors use them inside the C<eval{}> block
-and check C<$@>.
+and check the C<$@>.
 
-Sure IDEA:: functions will work only if you have Crypt::IDEA installed,
-DES:: - if you have Crypt::DES, Blowfish:: - if you have Crypt::Blowfish
-and Crypt::CBC is version 1.22 or above.
 
 Note that all filehandles are used in C<binmode> whether you claimed them
 C<binmode> or not. On Win32 for example this will result in CRLF's in
@@ -225,7 +263,7 @@ to the beginning and/or close.
 =head1 INSTALLATION
 
 As this is just a plain module no special installation is needed. Put it
-into the /Crypt subdirectory somewhere in your @INC. Though the standard
+into the /Crypt subdirectory somewhere in your @INC. The standard
 
  Makefile.PL
  make
@@ -244,17 +282,30 @@ Crypt::CBC at least 1.20 by Lincoln Stein, lstein@cshl.org
 
 one or more of
 
-Crypt::IDEA, Crypt::DES, Crypt::Blowfish available from CPAN
+Crypt::IDEA, Crypt::DES, Crypt::Blowfish, Crypt::Blowfish_PP,
+Crypt::Twofish2, Crypt::DES_PP or other Crypt::CBC compatible modules.
 
 =head1 CAVEATS
 
-This module has been created and tested in a Win95 environment.  Although
-I expect it to function correctly on any other system, that fact
-has not been confirmed.
+This module has been created and tested in a Win95/98/2000Pro environment
+with Perl 5.004_02 and ActiveState ActivePerl build 618.
+I expect it to function correctly on other systems too.
 
 =head1 CHANGES
 
  0.21   Mon Mar  6 07:28:41 2000  -  first public release
+
+ 0.22   Sun Feb 18 13:11:59 2001
+	A horrible BUG was found by Michael Drumheller <drumheller@alum.mit.edu>
+	In fact 0.21 was ALWAYS using DES despite of the desired cipher.
+	DAMN!
+	Fixed.
+	And the test is modified so that this will never happen again.
+
+	Now you can define the list of ciphers that are compatible
+	with Crypt::CBC in the import list.
+	You can not call this module with the "require" statement. This
+	is incompatible with the older versions.
 
 =head1 TODO
 
@@ -266,9 +317,9 @@ Please report.
 
 =head1 VERSION
 
-This man page documents "Crypt::CBCeasy" version 0.21.
+This man page documents "Crypt::CBCeasy" version 0.22
 
-March 6, 2000.
+February 18, 2001
 
 =head1 AUTHOR
 
@@ -282,7 +333,7 @@ Crypt::CBC
 
 =head1 COPYRIGHT
 
-Copyright (C) 2000 Mike Blazer.
+Copyright (C) 2000-2001 Mike Blazer.
 
 This package is free software; you can redistribute it and/or
 modify it under the same terms as Perl itself.

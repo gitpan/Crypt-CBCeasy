@@ -2,3 +2,16 @@ Revision history for Perl extension Crypt::CBCeasy.
 
 0.21  Mon Mar  6 07:28:41 2000
 	- first public release
+
+0.22  Sun Feb 18 13:11:59 2001
+	A horrible BUG was found by Michael Drumheller <drumheller@alum.mit.edu>
+	In fact 0.21 was ALWAYS using DES despite of the desired cipher.
+	DAMN!
+	Fixed.
+	And the test is modified so that this will never happen again.
+
+	Now you can define the list of ciphers that are compatible
+	with Crypt::CBC in the import list.
+
+	You can not call this module with the "require" statement. This
+	is incompatible with the older versions.

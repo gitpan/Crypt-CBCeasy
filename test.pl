@@ -7,25 +7,25 @@
 # (It may become useful if the test is moved to ./t subdirectory.)
 
 BEGIN {
- # OK, we want to check THIS version, not some older one
- unshift @INC, qw(blib/lib blib/arch);
-
  require Crypt::CBC;
  
  @ciphers = ();
- for ('DES', 'IDEA', ($Crypt::CBC::VERSION >= 1.22 ? 'Blowfish' : ())) {
+ for (qw/DES IDEA Twofish2 Blowfish_PP/,
+   ($] >= 5.006 ? 'DES_PP' : ()),
+   ($Crypt::CBC::VERSION >= 1.22 ? 'Blowfish' : ())) {
    eval "require Crypt::$_";
-   $@ or push @ciphers, $_;
+   $@ or warn("Crypt::$_ found\n"),push @ciphers, $_;
    undef $@;
  }
 
  $all_tests = 27;
 
  $| = 1; print "1..".(2 + $all_tests * scalar @ciphers)."\n";
+
 }
 END {print "not ok 1\n" unless $loaded;}
 
-use Crypt::CBCeasy;
+use Crypt::CBCeasy @ciphers;
 use MD5;
 use File::Path;
 use FileHandle;
@@ -40,7 +40,7 @@ print "ok 1\n";
 # of the test code):
 
 $key     = "my personal key";
-$in_file = "CBCeasy.pm";
+$in_file = "MANIFEST";
 $out_file = "";
 
 $test_num = 2;
@@ -65,6 +65,7 @@ sub Test1 {
   eval "${cipher}::encipher(\$key, \$in_file, \$out)";
   $@ and undef($@), return;
   -f $out && -s _ or return;
+  $Crypt::CBCeasy::LastCipher ne $cipher and return;
   1;
 }
 
@@ -75,6 +76,7 @@ sub Test2 {
   eval "${cipher}::decipher(\$key, \$in, \$out)";
   $@ and undef($@), return;
   -f $out && -s _ or return;
+  $Crypt::CBCeasy::LastCipher ne $cipher and return;
 
   $FILE_HASH eq hash_file($out);
 }
@@ -92,6 +94,7 @@ sub Test3 {
 
   $@ and undef($@), return;
   -f $out && -s _ or return;
+  $Crypt::CBCeasy::LastCipher ne $cipher and return;
 
   $FILE_HASH eq hash_file($out);
 }
@@ -109,6 +112,7 @@ sub Test4 {
 
   $@ and undef($@), return;
   -f $out && -s _ or return;
+  $Crypt::CBCeasy::LastCipher ne $cipher and return;
 
   $FILE_HASH eq hash_file($out);
 }
@@ -126,6 +130,7 @@ sub Test5 {
 
   $@ and undef($@), return;
   -f $out && -s _ or return;
+  $Crypt::CBCeasy::LastCipher ne $cipher and return;
 
   $FILE_HASH eq hash_file($out);
 }
@@ -143,6 +148,7 @@ sub Test6 {
 
   $@ and undef($@), return;
   -f $out && -s _ or return;
+  $Crypt::CBCeasy::LastCipher ne $cipher and return;
 
   $FILE_HASH eq hash_file($out);
 }
@@ -161,6 +167,7 @@ sub Test7 {
 
   $@ and undef($@), return;
   -f $out && -s _ or return;
+  $Crypt::CBCeasy::LastCipher ne $cipher and return;
 
   $FILE_HASH eq hash_file($out);
 }
@@ -179,6 +186,7 @@ sub Test8 {
 
   $@ and undef($@), return;
   -f $out && -s _ or return;
+  $Crypt::CBCeasy::LastCipher ne $cipher and return;
 
   $FILE_HASH eq hash_file($out);
 }
@@ -191,6 +199,8 @@ sub Test9 {
   my $str = eval "${cipher}::decipher(\$key, \$in)";
 
   $@ and undef($@), return;
+  $Crypt::CBCeasy::LastCipher ne $cipher and return;
+
   $str =~ s/\r\n/\n/g;
   $FILE_HASH eq MD5->hash($str);
 }
@@ -206,6 +216,8 @@ sub Test10 {
   close IN;
 
   $@ and undef($@), return;
+  $Crypt::CBCeasy::LastCipher ne $cipher and return;
+
   $str =~ s/\r\n/\n/g;
   $FILE_HASH eq MD5->hash($str);
 }
@@ -224,6 +236,7 @@ sub Test12 {
 
   $@ and undef($@), return;
   -f $out && -s _ or return;
+  $Crypt::CBCeasy::LastCipher ne $cipher and return;
 
   check_plainfile($out);
 }
@@ -238,6 +251,7 @@ sub Test13 {
 
   $@ and undef($@), return;
   -f $out && -s _ or return;
+  $Crypt::CBCeasy::LastCipher ne $cipher and return;
 
   check_plainfile($out);
 }
@@ -255,6 +269,7 @@ sub Test14 {
 
   $@ and undef($@), return;
   -f $out && -s _ or return;
+  $Crypt::CBCeasy::LastCipher ne $cipher and return;
 
   check_plainfile($out);
 }
@@ -270,6 +285,7 @@ sub Test15 {
 
   $@ and undef($@), return;
   -f $out && -s _ or return;
+  $Crypt::CBCeasy::LastCipher ne $cipher and return;
 
   check_plainfile($out);
 }
@@ -285,6 +301,7 @@ sub Test16 {
 
   $@ and undef($@), return;
   -f $out && -s _ or return;
+  $Crypt::CBCeasy::LastCipher ne $cipher and return;
 
   check_plainfile($out);
 }
@@ -301,6 +318,7 @@ sub Test17 {
 
   write_file($out, $str) or return;
   -f $out && -s _ or return;
+  $Crypt::CBCeasy::LastCipher ne $cipher and return;
 
   check_plainfile($out);
 }
@@ -317,6 +335,7 @@ sub Test18 {
 
   write_file($out, $str) or return;
   -f $out && -s _ or return;
+  $Crypt::CBCeasy::LastCipher ne $cipher and return;
 
   check_plainfile($out);
 }
@@ -330,6 +349,7 @@ sub Test19 {
 
   write_file($out, $str) or return;
   -f $out && -s _ or return;
+  $Crypt::CBCeasy::LastCipher ne $cipher and return;
 
   check_plainfile($out);
 }
@@ -347,6 +367,7 @@ sub Test20 {
 
   $@ and undef($@), return;
   -f $out && -s _ or return;
+  $Crypt::CBCeasy::LastCipher ne $cipher and return;
 
   $FILE_HASH eq hash_file($out);
 }
@@ -363,6 +384,7 @@ sub Test21 {
 
   $@ and undef($@), return;
   -f $out && -s _ or return;
+  $Crypt::CBCeasy::LastCipher ne $cipher and return;
 
   $FILE_HASH eq hash_file($out);
 }
@@ -380,6 +402,7 @@ sub Test22 {
 
   $@ and undef($@), return;
   -f $out && -s _ or return;
+  $Crypt::CBCeasy::LastCipher ne $cipher and return;
 
   $FILE_HASH eq hash_file($out);
 }
@@ -394,6 +417,8 @@ sub Test23 {
   $fh->close;
 
   $@ and undef($@), return;
+  $Crypt::CBCeasy::LastCipher ne $cipher and return;
+
   $str =~ s/\r\n/\n/g;
   $FILE_HASH eq MD5->hash($str);
 }
@@ -407,6 +432,7 @@ sub Test24 {
 
   $@ and undef($@), return;
   -f $out && -s _ or return;
+  $Crypt::CBCeasy::LastCipher ne $cipher and return;
 
   check_plainfile($out);
 }
@@ -424,6 +450,7 @@ sub Test25 {
 
   $@ and undef($@), return;
   -f $out && -s _ or return;
+  $Crypt::CBCeasy::LastCipher ne $cipher and return;
 
   check_plainfile($out);
 }
@@ -438,6 +465,7 @@ sub Test26 {
 
   $@ and undef($@), return;
   -f $out && -s _ or return;
+  $Crypt::CBCeasy::LastCipher ne $cipher and return;
 
   check_plainfile($out);
 }
@@ -453,6 +481,7 @@ sub Test27 {
 
   write_file($out, $str) or return;
   -f $out && -s _ or return;
+  $Crypt::CBCeasy::LastCipher ne $cipher and return;
 
   check_plainfile($out);
 }
@@ -483,6 +512,8 @@ sub check_plainfile {
   close IN;
 
   $@ and undef($@), return;
+  $Crypt::CBCeasy::LastCipher ne $cipher and return;
+
   $str =~ s/\r\n/\n/g;
   $FILE_HASH eq MD5->hash($str);
 }

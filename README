@@ -19,9 +19,7 @@ ABSTRACT
 This module is a helper for Crypt::CBC to make simple and
 usual jobs just one-liners.
 
-The current version of the module is available at:
-
-  http://base.dux.ru/guest/fno/perl/
+The current version of the module is available at CPAN.
 
 See CBCeasy.pm for POD docs.
 
@@ -48,7 +46,8 @@ Crypt::CBC at least 1.20 by Lincoln Stein, lstein@cshl.org
 
 one or more of
 
-Crypt::IDEA, Crypt::DES, Crypt::Blowfish available from CPAN
+Crypt::IDEA, Crypt::DES, Crypt::Blowfish, Crypt::Blowfish_PP,
+Crypt::Twofish2, Crypt::DES_PP or other Crypt::CBC compatible modules.
 
 
 AUTHOR
@@ -60,7 +59,7 @@ http://www.dux.ru/guest/fno/perl/
 
 COPYRIGHT
 
-Copyright (C) 2000 Mike Blazer.
+Copyright (C) 2000-2001 Mike Blazer.
 
 This package is free software; you can redistribute it and/or
 modify it under the same terms as Perl itself.
