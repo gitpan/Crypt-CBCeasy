@@ -15,3 +15,12 @@ Revision history for Perl extension Crypt::CBCeasy.
 
 	You can not call this module with the "require" statement. This
 	is incompatible with the older versions.
+
+0.23    Crypt::Rijndael 0.02 compatibility was approved.
+        Tests are some more complex now.
+
+
+0.24    Sun Apr  8 02:28:26 2001
+	Crypt::TEA 1.01 by Abhijit Menon-Sen <ams@wiw.org> is checked
+	and approved.
+

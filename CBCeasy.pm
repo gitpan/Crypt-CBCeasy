@@ -1,4 +1,4 @@
-# easy en/decryption with DES/IDEA/Blowfish
+# easy en/decryption with DES/IDEA/Blowfish and some other ciphers
 # Mike Blazer <blazer@mail.nevalink.ru>
 
 package Crypt::CBCeasy;
@@ -12,7 +12,7 @@ use strict;
 no strict 'refs';
 use vars qw($VERSION @DEFAULT_CIPHERS $LastCipher);
 
-$VERSION = '0.22';
+$VERSION = '0.24';
 @DEFAULT_CIPHERS = qw/DES IDEA Blowfish/;
 
 
@@ -173,6 +173,8 @@ that are C<Crypt::CBC> compatible):
   Twofish2        Crypt::Twofish2
   DES_PP          Crypt::DES_PP
   Blowfish_PP     Crypt::Blowfish_PP
+  Rijndael        Crypt::Rijndael
+  TEA             Crypt::TEA
 
 Note that cipher names are case sensitive in the C<IMPORT-LIST>,
 so "blowfish" will give an error.
@@ -278,7 +280,8 @@ will produce the HTML-docs.
 
 This module requires
 
-Crypt::CBC at least 1.20 by Lincoln Stein, lstein@cshl.org
+Crypt::CBC by Lincoln Stein, lstein@cshl.org
+v.1.20 or later.
 
 one or more of
 
@@ -307,6 +310,12 @@ I expect it to function correctly on other systems too.
 	You can not call this module with the "require" statement. This
 	is incompatible with the older versions.
 
+  0.23  Crypt::Rijndael 0.02 compatibility was approved.
+        Tests are some more complex now.
+
+  0.24  Crypt::TEA 1.01 by Abhijit Menon-Sen <ams@wiw.org> is checked
+	and approved.
+
 =head1 TODO
 
 Any suggestions are much appreciated.
@@ -317,7 +326,7 @@ Please report.
 
 =head1 VERSION
 
-This man page documents "Crypt::CBCeasy" version 0.22
+This man page documents "Crypt::CBCeasy" version 0.24
 
 February 18, 2001
 

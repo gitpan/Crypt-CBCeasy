@@ -47,7 +47,8 @@ Crypt::CBC at least 1.20 by Lincoln Stein, lstein@cshl.org
 one or more of
 
 Crypt::IDEA, Crypt::DES, Crypt::Blowfish, Crypt::Blowfish_PP,
-Crypt::Twofish2, Crypt::DES_PP or other Crypt::CBC compatible modules.
+Crypt::Twofish2, Crypt::DES_PP, Crypt::Rijndael or other
+Crypt::CBC compatible modules.
 
 
 AUTHOR

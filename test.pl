@@ -8,14 +8,31 @@
 
 BEGIN {
  require Crypt::CBC;
+
+ %REQ = (
+  DES         => {crypt_cbc_version => 0,    version => 0},
+  DES_PP      => {crypt_cbc_version => 0,    version => 0},
+  IDEA        => {crypt_cbc_version => 0,    version => 0},
+  Twofish2    => {crypt_cbc_version => 0,    version => 0.06},
+  Rijndael    => {crypt_cbc_version => 0,    version => 0.01},
+  Blowfish    => {crypt_cbc_version => 1.22, version => 0},
+  Blowfish_PP => {crypt_cbc_version => 1.22, version => 0},
+  TEA         => {crypt_cbc_version => 0,    version => 1.01},
+ );
  
  @ciphers = ();
- for (qw/DES IDEA Twofish2 Blowfish_PP/,
-   ($] >= 5.006 ? 'DES_PP' : ()),
-   ($Crypt::CBC::VERSION >= 1.22 ? 'Blowfish' : ())) {
+ for (sort keys %REQ) {
+
+   $REQ{$_}->{crypt_cbc_version} &&
+   $Crypt::CBC::VERSION < $REQ{$_}->{crypt_cbc_version} and next;
+
    eval "require Crypt::$_";
-   $@ or warn("Crypt::$_ found\n"),push @ciphers, $_;
-   undef $@;
+   $@ and undef($@), next;
+
+   $ver = eval "\$Crypt::${_}::VERSION";
+   $REQ{$_}->{version} && $ver < $REQ{$_}->{version} and next;
+
+   push @ciphers, $_;
  }
 
  $all_tests = 27;
@@ -53,12 +70,30 @@ $FILE_HASH = MD5->hash($FILE_STR);
 
 mkpath(["tests"], 0) or die "Can't create dir \"tests\"\n"  unless -d "tests";
 
+%res = ();
+
 for $cipher(@ciphers) {
+   $res{$cipher} = {"ok" => 0, "failed" => 0};
+
    for $i(1..$all_tests) {
-      eval qq~print(( Test${i}() ? "" : "not " )."ok ".(\$test_num++)."\n")~;
+      $res = eval qq~ &Test$i ~;
+
+      if ($res) {$res{$cipher}->{"ok"}++} else {$res{$cipher}->{"failed"}++}
+
+      print(( $res ? "" : "not " )."ok ".($test_num++)."\n");
    }
 }
 
+$len = (sort {$b <=> $a} map length,@ciphers)[0];
+
+print "\nOK, here it is. The ciphers you can use with Crypt::CBCeasy
+(the other could be added later, see POD docs):\n\n";
+
+for $cipher(@ciphers) {
+   ($ok, $failed) = ($res{$cipher}->{"ok"}, $res{$cipher}->{"failed"});
+   print "Crypt::$cipher ".(" "x($len-length $cipher)).
+	"   tests: ".($ok+$failed)."    ok: $ok    failed: $failed\n";
+}
 
 sub Test1 {
   my $out = "tests/$cipher.o1";
